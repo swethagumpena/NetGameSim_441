@@ -23,7 +23,10 @@ lazy val commonDependencies = Seq(
   "org.scalatestplus" %% "mockito-4-2" % "3.2.12.0-RC2" % Test,
   "com.typesafe" % "config" % typeSafeConfigVersion,
   "ch.qos.logback" % "logback-classic" % logbackVersion,
-  "net.bytebuddy" % "byte-buddy" % netBuddyVersion
+  "net.bytebuddy" % "byte-buddy" % netBuddyVersion,
+  "org.apache.hadoop" % "hadoop-common" % "3.3.6",
+  "org.apache.hadoop" % "hadoop-mapreduce-client-core" % "3.3.6",
+  "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % "3.3.6"
 )
 
 lazy val root = (project in file("."))
