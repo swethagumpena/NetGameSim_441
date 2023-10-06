@@ -65,7 +65,11 @@ object AlgoPerformance extends App {
 
         valuesToCheck.foreach { valueToCheck =>
           if (yamlDataValue.contains(valueToCheck)) {
-            output.collect(new Text("ATL"), one)
+            if (key == "AddedNodes" || key == "RemovedNodes" || key == "AddedEdges" || key == "RemovedEdges") {
+              output.collect(new Text("DTL"), one)
+            } else {
+              output.collect(new Text("ATL"), one)
+            }
           } else {
             output.collect(new Text("WTL"), one)
           }

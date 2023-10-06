@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters.*
 
 object LikelihoodComputation extends App {
   class LikelihoodComputationMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
-    
+
     def findBestScore(key: String, value: String): (String, Double) = {
       val selectedElement = key match {
         case k if k.startsWith("O_") =>

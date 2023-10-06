@@ -9,6 +9,7 @@ import AlgoPerformance.{AlgoPerformanceMap, AlgoPerformanceReduce}
 import NetGraphAlgebraDefs.NetGraph
 import utils.WriteNodePairsToFile.createNodePairsAndWrite
 import utils.WriteEdgePairsToFile.createEdgePairsAndWrite
+import utils.GoodnessEstimation.calculateGoodness
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{IntWritable, Text}
@@ -139,13 +140,11 @@ object MainClass {
     }
 
     logger.info(s"Running the jobs")
-    val nodesSimScoreJobSuccess = runNodesSimScoreMapReduceJob(args)
-    val edgesSimScoreJobSuccess = runEdgesSimScoreMapReduceJob(args)
-    if (nodesSimScoreJobSuccess && edgesSimScoreJobSuccess) {
-      val likelihoodComputationJobSuccess = runLikelihoodMapReduceJob(args)
-      if (likelihoodComputationJobSuccess) {
-        val runAlgoPerformanceJobSuccess = runAlgoPerformanceMapReduceJob(args)
-      }
+    if (runNodesSimScoreMapReduceJob(args) &&
+      runEdgesSimScoreMapReduceJob(args) &&
+      runLikelihoodMapReduceJob(args) &&
+      runAlgoPerformanceMapReduceJob(args)) {
+      calculateGoodness(s"${args(3)}${funcConfig.getString("AlgorithmPerformance")}/part-00000", s"${args(3)}${funcConfig.getString("Results")}")
     }
   }
 }
