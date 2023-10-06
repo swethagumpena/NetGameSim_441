@@ -4,10 +4,12 @@ import NetGraphAlgebraDefs.NetModelAlgebra.{logger, outputDirectory}
 import NodesSimScore.{NodesSimScoreMap, NodesSimScoreReduce}
 import EdgesSimScore.{EdgesSimScoreMap, EdgesSimScoreReduce}
 import LikelihoodComputation.{LikelihoodComputationMap, LikelihoodComputationReduce}
+import AlgoPerformance.{AlgoPerformanceMap, AlgoPerformanceReduce}
 
 import NetGraphAlgebraDefs.NetGraph
 import utils.WriteNodePairsToFile.createNodePairsAndWrite
 import utils.WriteEdgePairsToFile.createEdgePairsAndWrite
+import utils.ParseYaml.parseFile
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{IntWritable, Text}
@@ -17,8 +19,11 @@ import scala.jdk.CollectionConverters._
 
 object MainClass {
   def main(args: Array[String]): Unit = {
-    val netGraphOriginal = NetGraph.load(args(0), outputDirectory);
-    val netGraphPerturbed = NetGraph.load(args(1), outputDirectory);
+    val netGraphOriginal = NetGraph.load(args(0), outputDirectory)
+    val netGraphPerturbed = NetGraph.load(args(1), outputDirectory)
+
+    val result: Map[String, List[String]] = parseFile("/Users/swethagumpena/UIC/441_Cloud_computing/Project1/NetGameSim/outputs/NetGameSimNetGraph_23-09-23-10-49-19.ngs.yaml")
+    println(result)
 
     val config: Config = ConfigFactory.load("application.conf")
     val preprocessingConfig = config.getConfig("graphComparison.preprocessing.outputPath")
@@ -86,21 +91,21 @@ object MainClass {
     }
 
     def runLikelihoodMapReduceJob(args: Array[String]): Boolean = {
-      val conf2: JobConf = new JobConf(this.getClass)
-      conf2.setJobName("FindLikelihoodOfChange")
-      conf2.set("mapred.textoutputformat.separator", ":")
-      conf2.set("mapreduce.job.maps", "1")
-      conf2.set("mapreduce.job.reduces", "1")
-      conf2.setOutputKeyClass(classOf[Text])
-      conf2.setOutputValueClass(classOf[Text])
-      conf2.setMapperClass(classOf[LikelihoodComputationMap])
-      conf2.setReducerClass(classOf[LikelihoodComputationReduce])
-      conf2.setInputFormat(classOf[TextInputFormat])
-      conf2.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.addInputPath(conf2, new Path(s"${args(2)}${funcConfig.getString("NodesSimScore")}/part-00000"))
-      FileInputFormat.addInputPath(conf2, new Path(s"${args(2)}${funcConfig.getString("EdgesSimScore")}/part-00000"))
-      FileOutputFormat.setOutputPath(conf2, new Path(s"${args(2)}${funcConfig.getString("LikelihoodComputation")}"))
-      val runningJob = JobClient.runJob(conf2)
+      val conf: JobConf = new JobConf(this.getClass)
+      conf.setJobName("FindLikelihoodOfChange")
+      conf.set("mapred.textoutputformat.separator", ":")
+      conf.set("mapreduce.job.maps", "1")
+      conf.set("mapreduce.job.reduces", "1")
+      conf.setOutputKeyClass(classOf[Text])
+      conf.setOutputValueClass(classOf[Text])
+      conf.setMapperClass(classOf[LikelihoodComputationMap])
+      conf.setReducerClass(classOf[LikelihoodComputationReduce])
+      conf.setInputFormat(classOf[TextInputFormat])
+      conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
+      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("NodesSimScore")}/part-00000"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("EdgesSimScore")}/part-00000"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("LikelihoodComputation")}"))
+      val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
         logger.info("Likelihood Computation job completed successfully")
@@ -111,11 +116,39 @@ object MainClass {
       }
     }
 
+    def runAlgoPerformanceMapReduceJob(args: Array[String]): Boolean = {
+      val conf: JobConf = new JobConf(this.getClass)
+      conf.setJobName("EstimateAlgorithmPerformance")
+      conf.set("mapred.textoutputformat.separator", ":")
+      conf.set("mapreduce.job.maps", "1")
+      conf.set("mapreduce.job.reduces", "1")
+      conf.setOutputKeyClass(classOf[Text])
+      conf.setOutputValueClass(classOf[Text])
+      conf.setMapperClass(classOf[AlgoPerformanceMap])
+      conf.setReducerClass(classOf[AlgoPerformanceReduce])
+      conf.setInputFormat(classOf[TextInputFormat])
+      conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
+      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("LikelihoodComputation")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("AlgorithmPerformance")}"))
+      val runningJob = JobClient.runJob(conf)
+
+      if (runningJob.isSuccessful) {
+        logger.info("Estimate Algorithm Performance job completed successfully")
+        true
+      } else {
+        logger.error("Estimate Algorithm Performance job failed")
+        false
+      }
+    }
+
     logger.info(s"Running the jobs")
     val nodesSimScoreJobSuccess = runNodesSimScoreMapReduceJob(args)
     val edgesSimScoreJobSuccess = runEdgesSimScoreMapReduceJob(args)
     if (nodesSimScoreJobSuccess && edgesSimScoreJobSuccess) {
       val likelihoodComputationJobSuccess = runLikelihoodMapReduceJob(args)
+      if (likelihoodComputationJobSuccess) {
+        runAlgoPerformanceMapReduceJob(args)
+      }
     }
   }
 }
