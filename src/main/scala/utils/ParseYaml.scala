@@ -86,12 +86,12 @@ object ParseYaml {
       addedEdges, modifiedEdges, removedEdges) = result
 
       Map(
-        "addedNodes" -> addedNodes.reverse,
-        "modifiedNodes" -> modifiedNodes,
-        "removedNodes" -> removedNodes,
-        "addedEdges" -> addedEdges.reverse,
-        "modifiedEdges" -> modifiedEdges.reverse,
-        "removedEdges" -> removedEdges.reverse
+        "AddedNodes" -> addedNodes.reverse,
+        "ModifiedNodes" -> modifiedNodes,
+        "RemovedNodes" -> removedNodes,
+        "AddedEdges" -> addedEdges.reverse,
+        "ModifiedEdges" -> modifiedEdges.reverse,
+        "RemovedEdges" -> removedEdges.reverse
       )
     }.get // This will handle any exceptions thrown by Using and return the result
   }

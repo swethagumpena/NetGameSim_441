@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters.*
 
 object LikelihoodComputation extends App {
   class LikelihoodComputationMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
-
+    
     def findBestScore(key: String, value: String): (String, Double) = {
       val selectedElement = key match {
         case k if k.startsWith("O_") =>
@@ -26,7 +26,7 @@ object LikelihoodComputation extends App {
           if (maxScore > 0.5 && maxScore <= 0.9)
             s"${key.stripPrefix("O_")}=0.0"
           else
-            maxScoreElement
+            s"${key.stripPrefix("O_")}=$maxScore"
 
         case k if k.startsWith("P_") =>
           val filteredElements = value.split(", ").filter { element =>
@@ -66,20 +66,17 @@ object LikelihoodComputation extends App {
         case edgePattern(x, y) =>
           if (parts(0).startsWith("O_")) {
             val category =
-              if (highestScore > 0.9) "Unchanged Edges"
+              if (highestScore > 0.9) "UnchangedEdges"
               else if (highestScore > 0.1) {
-                logger.info("Modified edges: " + highestScore + " " + nodeIds)
-                "Modified Edges"
+                "ModifiedEdges"
               } else {
-                logger.info("Removed edges: " + highestScore + " " + nodeIds)
-                "Removed Edges"
+                "RemovedEdges"
               }
             output.collect(new Text(category), new Text(nodeIds))
           } else if (parts(0).startsWith("P_")) {
             if (highestScore == 0.0) {
               val category = {
-                logger.info("Added edges: " + highestScore + " " + nodeIds)
-                "Added Edges"
+                "AddedEdges"
               }
               output.collect(new Text(category), new Text(nodeIds))
             }
@@ -87,13 +84,13 @@ object LikelihoodComputation extends App {
         case nodePattern(id) =>
           if (parts(0).startsWith("O_")) {
             val category =
-              if (highestScore > 0.9) "Unchanged Nodes"
-              else if (highestScore > 0.1) "Modified Nodes"
-              else "Removed Nodes"
+              if (highestScore > 0.9) "UnchangedNodes"
+              else if (highestScore > 0.1) "ModifiedNodes"
+              else "RemovedNodes"
             output.collect(new Text(category), new Text(nodeIds))
           } else if (parts(0).startsWith("P_")) {
             if (highestScore == 0.0) {
-              val category = "Added Nodes"
+              val category = "AddedNodes"
               output.collect(new Text(category), new Text(nodeIds))
             }
           }

@@ -9,7 +9,6 @@ import AlgoPerformance.{AlgoPerformanceMap, AlgoPerformanceReduce}
 import NetGraphAlgebraDefs.NetGraph
 import utils.WriteNodePairsToFile.createNodePairsAndWrite
 import utils.WriteEdgePairsToFile.createEdgePairsAndWrite
-import utils.ParseYaml.parseFile
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{IntWritable, Text}
@@ -22,9 +21,6 @@ object MainClass {
     val netGraphOriginal = NetGraph.load(args(0), outputDirectory)
     val netGraphPerturbed = NetGraph.load(args(1), outputDirectory)
 
-    val result: Map[String, List[String]] = parseFile("/Users/swethagumpena/UIC/441_Cloud_computing/Project1/NetGameSim/outputs/NetGameSimNetGraph_23-09-23-10-49-19.ngs.yaml")
-    println(result)
-
     val config: Config = ConfigFactory.load("application.conf")
     val preprocessingConfig = config.getConfig("graphComparison.preprocessing.outputPath")
     val funcConfig = config.getConfig("graphComparison.functionalityconfigs.outputPath")
@@ -35,8 +31,8 @@ object MainClass {
     val headOriginal = netGraphOriginal.head.sm
     val headPerturbed = netGraphPerturbed.head.sm
 
-    createNodePairsAndWrite(headOriginal, headPerturbed, s"${args(2)}${preprocessingConfig.getString("NodePairs")}")
-    createEdgePairsAndWrite(headOriginal, headPerturbed, s"${args(2)}${preprocessingConfig.getString("EdgePairs")}")
+    createNodePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${preprocessingConfig.getString("NodePairs")}")
+    createEdgePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${preprocessingConfig.getString("EdgePairs")}")
 
     logger.info(s"Intermediate nodes pre-processed file created at ${preprocessingConfig.getString("NodePairs")} and edges pre-processed file created at ${preprocessingConfig.getString("EdgePairs")}")
 
@@ -52,8 +48,8 @@ object MainClass {
       conf.setReducerClass(classOf[NodesSimScoreReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.setInputPaths(conf, new Path(s"${args(2)}${preprocessingConfig.getString("NodePairs")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("NodesSimScore")}"))
+      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${preprocessingConfig.getString("NodePairs")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("NodesSimScore")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -77,8 +73,8 @@ object MainClass {
       conf.setReducerClass(classOf[EdgesSimScoreReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.setInputPaths(conf, new Path(s"${args(2)}${preprocessingConfig.getString("EdgePairs")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("EdgesSimScore")}"))
+      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${preprocessingConfig.getString("EdgePairs")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("EdgesSimScore")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -102,9 +98,9 @@ object MainClass {
       conf.setReducerClass(classOf[LikelihoodComputationReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("NodesSimScore")}/part-00000"))
-      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("EdgesSimScore")}/part-00000"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("LikelihoodComputation")}"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("NodesSimScore")}/part-00000"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("EdgesSimScore")}/part-00000"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("LikelihoodComputation")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -120,16 +116,17 @@ object MainClass {
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("EstimateAlgorithmPerformance")
       conf.set("mapred.textoutputformat.separator", ":")
+      conf.set("NGS_yaml_file", s"$outputDirectory${args(2)}")
       conf.set("mapreduce.job.maps", "1")
       conf.set("mapreduce.job.reduces", "1")
       conf.setOutputKeyClass(classOf[Text])
-      conf.setOutputValueClass(classOf[Text])
+      conf.setOutputValueClass(classOf[IntWritable])
       conf.setMapperClass(classOf[AlgoPerformanceMap])
       conf.setReducerClass(classOf[AlgoPerformanceReduce])
       conf.setInputFormat(classOf[TextInputFormat])
-      conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.addInputPath(conf, new Path(s"${args(2)}${funcConfig.getString("LikelihoodComputation")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(2)}${funcConfig.getString("AlgorithmPerformance")}"))
+      conf.setOutputFormat(classOf[TextOutputFormat[Text, IntWritable]])
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("LikelihoodComputation")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("AlgorithmPerformance")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -147,7 +144,7 @@ object MainClass {
     if (nodesSimScoreJobSuccess && edgesSimScoreJobSuccess) {
       val likelihoodComputationJobSuccess = runLikelihoodMapReduceJob(args)
       if (likelihoodComputationJobSuccess) {
-        runAlgoPerformanceMapReduceJob(args)
+        val runAlgoPerformanceJobSuccess = runAlgoPerformanceMapReduceJob(args)
       }
     }
   }
