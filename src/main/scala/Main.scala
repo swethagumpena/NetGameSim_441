@@ -41,7 +41,7 @@ object Main:
     val existingGraph = java.io.File(s"$outputDirectory$outGraphFileName").exists
     val g: Option[NetGraph] = if existingGraph then
       logger.warn(s"File $outputDirectory$outGraphFileName is located, loading it up. If you want a new generated graph please delete the existing file or change the file name.")
-      NetGraph.load(fileName = s"$outputDirectory$outGraphFileName")
+      NetGraph.load(filePath = s"$outputDirectory$outGraphFileName")
     else
       val config = ConfigFactory.load()
       logger.info("for the main entry")
