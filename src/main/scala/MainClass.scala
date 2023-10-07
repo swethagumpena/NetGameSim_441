@@ -15,27 +15,26 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{IntWritable, Text}
 import org.apache.hadoop.mapred.*
 import org.apache.hadoop.conf.*
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
+import scala.io.Source
 
 object MainClass {
   def main(args: Array[String]): Unit = {
-    val netGraphOriginal = NetGraph.load(args(0), outputDirectory)
-    val netGraphPerturbed = NetGraph.load(args(1), outputDirectory)
-
-    val config: Config = ConfigFactory.load("application.conf")
-    val preprocessingConfig = config.getConfig("graphComparison.preprocessing.outputPath")
-    val funcConfig = config.getConfig("graphComparison.functionalityconfigs.outputPath")
+    val netGraphOriginal = NetGraph.load(args(0))
+    val netGraphPerturbed = NetGraph.load(args(1))
 
     if netGraphOriginal.isEmpty || netGraphPerturbed.isEmpty then
-       logger.warn("Input is not of the right format")
+      logger.warn("Input is not of the right format")
+    else logger.info("Graphs successfully loaded")
+
+    val config = ConfigFactory.load()
+    val pathConfig = config.getConfig("NGSimulator").getConfig("OutputPath")
 
     val headOriginal = netGraphOriginal.head.sm
     val headPerturbed = netGraphPerturbed.head.sm
 
-    createNodePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${preprocessingConfig.getString("NodePairs")}")
-    createEdgePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${preprocessingConfig.getString("EdgePairs")}")
-
-    logger.info(s"Intermediate nodes pre-processed file created at ${preprocessingConfig.getString("NodePairs")} and edges pre-processed file created at ${preprocessingConfig.getString("EdgePairs")}")
+    createNodePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${pathConfig.getString("nodePairs")}")
+    createEdgePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${pathConfig.getString("edgePairs")}")
 
     def runNodesSimScoreMapReduceJob(args: Array[String]): Boolean = {
       val conf: JobConf = new JobConf(this.getClass)
@@ -49,8 +48,8 @@ object MainClass {
       conf.setReducerClass(classOf[NodesSimScoreReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${preprocessingConfig.getString("NodePairs")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("NodesSimScore")}"))
+      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${pathConfig.getString("nodePairs")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${pathConfig.getString("nodesSimScore")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -74,8 +73,8 @@ object MainClass {
       conf.setReducerClass(classOf[EdgesSimScoreReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${preprocessingConfig.getString("EdgePairs")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("EdgesSimScore")}"))
+      FileInputFormat.setInputPaths(conf, new Path(s"${args(3)}${pathConfig.getString("edgePairs")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${pathConfig.getString("edgesSimScore")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -99,9 +98,9 @@ object MainClass {
       conf.setReducerClass(classOf[LikelihoodComputationReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, Text]])
-      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("NodesSimScore")}/part-00000"))
-      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("EdgesSimScore")}/part-00000"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("LikelihoodComputation")}"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${pathConfig.getString("nodesSimScore")}/part-00000"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${pathConfig.getString("edgesSimScore")}/part-00000"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${pathConfig.getString("likelihoodComputation")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -117,7 +116,7 @@ object MainClass {
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("EstimateAlgorithmPerformance")
       conf.set("mapred.textoutputformat.separator", ":")
-      conf.set("NGS_yaml_file", s"$outputDirectory${args(2)}")
+      conf.set("NGS_yaml_file", args(2))
       conf.set("mapreduce.job.maps", "1")
       conf.set("mapreduce.job.reduces", "1")
       conf.setOutputKeyClass(classOf[Text])
@@ -126,8 +125,8 @@ object MainClass {
       conf.setReducerClass(classOf[AlgoPerformanceReduce])
       conf.setInputFormat(classOf[TextInputFormat])
       conf.setOutputFormat(classOf[TextOutputFormat[Text, IntWritable]])
-      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${funcConfig.getString("LikelihoodComputation")}"))
-      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${funcConfig.getString("AlgorithmPerformance")}"))
+      FileInputFormat.addInputPath(conf, new Path(s"${args(3)}${pathConfig.getString("likelihoodComputation")}"))
+      FileOutputFormat.setOutputPath(conf, new Path(s"${args(3)}${pathConfig.getString("algorithmPerformance")}"))
       val runningJob = JobClient.runJob(conf)
 
       if (runningJob.isSuccessful) {
@@ -144,7 +143,7 @@ object MainClass {
       runEdgesSimScoreMapReduceJob(args) &&
       runLikelihoodMapReduceJob(args) &&
       runAlgoPerformanceMapReduceJob(args)) {
-      calculateGoodness(s"${args(3)}${funcConfig.getString("AlgorithmPerformance")}/part-00000", s"${args(3)}${funcConfig.getString("Results")}")
+      calculateGoodness(s"${args(3)}${pathConfig.getString("algorithmPerformance")}/part-00000", s"${args(3)}${pathConfig.getString("results")}")
     }
   }
 }
