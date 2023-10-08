@@ -35,7 +35,7 @@ class NetGraphTest extends AnyFlatSpec with Matchers {
     val graph: NetGraph = NetModelAlgebra().get
     graph.persist(outputDirectory, "testGraph_2.ser")
     FileUtils.getFile(outputDirectory + "testGraph_2.ser").exists() shouldEqual true
-    val graph2 = NetGraph.load("testGraph_2.ser", outputDirectory)
+    val graph2 = NetGraph.load(s"$outputDirectory/testGraph_2.ser")
     Try(FileUtils.forceDelete(FileUtils.getFile(outputDirectory + "testGraph_2.ser"))) match
        case Failure(exception) =>
          logger.warn(s"Cannot delete file ${outputDirectory + "testGraph_2.ser"}")
