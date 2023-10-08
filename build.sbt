@@ -1,3 +1,5 @@
+import sbt.Keys.libraryDependencies
+
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 Global / excludeLintKeys += idePackagePrefix
@@ -26,15 +28,17 @@ lazy val commonDependencies = Seq(
   "net.bytebuddy" % "byte-buddy" % netBuddyVersion,
   "org.apache.hadoop" % "hadoop-common" % "3.3.6",
   "org.apache.hadoop" % "hadoop-mapreduce-client-core" % "3.3.6",
-  "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % "3.3.6"
-)
+  "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % "3.3.6",
+  "software.amazon.awssdk" % "s3" % "2.17.21"
+).map(_.exclude("org.slf4j", "*"))
 
 lazy val root = (project in file("."))
   .settings(
     scalaVersion := "3.2.2",
     name := "NetGameSim",
     idePackagePrefix := Some("com.lsc"),
-    libraryDependencies ++= commonDependencies
+    libraryDependencies ++= commonDependencies,
+    libraryDependencies ++= Seq("ch.qos.logback" % "logback-classic" % logbackVersion)
   ).aggregate(NetModelGenerator,GenericSimUtilities).dependsOn(NetModelGenerator)
 
 lazy val NetModelGenerator = (project in file("NetModelGenerator"))
@@ -48,16 +52,17 @@ lazy val NetModelGenerator = (project in file("NetModelGenerator"))
       "commons-io" % "commons-io" % apacheCommonsVersion,
       "org.jgrapht" % "jgrapht-core" % jGraphTlibVersion,
       "org.jgrapht" % "jgrapht-guava" % guavaAdapter2jGraphtVersion,
-    )
+    ),
+    libraryDependencies ++= Seq("ch.qos.logback" % "logback-classic" % logbackVersion)
   ).dependsOn(GenericSimUtilities)
 
 lazy val GenericSimUtilities = (project in file("GenericSimUtilities"))
   .settings(
     scalaVersion := "3.2.2",
     name := "GenericSimUtilities",
-    libraryDependencies ++= commonDependencies
+    libraryDependencies ++= commonDependencies,
+    libraryDependencies ++= Seq("ch.qos.logback" % "logback-classic" % logbackVersion)
   )
-
 
 scalacOptions ++= Seq(
       "-deprecation", // emit warning and location for usages of deprecated APIs
@@ -74,12 +79,11 @@ run / javaOptions ++= Seq(
   "-XX:+UseG1GC"
 )
 
-Compile / mainClass := Some("com.lsc.Main")
-run / mainClass := Some("com.lsc.Main")
+Compile / mainClass := Some("com.lsc.MainClass")
+run / mainClass := Some("com.lsc.MainClass")
 
 val jarName = "netmodelsim.jar"
 assembly/assemblyJarName := jarName
-
 
 //Merging strategies
 ThisBuild / assemblyMergeStrategy := {
