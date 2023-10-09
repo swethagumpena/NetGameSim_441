@@ -20,16 +20,20 @@ import scala.io.Source
 
 object MainClass {
   def main(args: Array[String]): Unit = {
+    // Load original and perturbed NetGraphs
     val netGraphOriginal = NetGraph.load(args(0))
     val netGraphPerturbed = NetGraph.load(args(1))
 
+    // Check if graphs were loaded successfully
     if netGraphOriginal.isEmpty || netGraphPerturbed.isEmpty then
       logger.warn("Input is not of the right format")
     else logger.info("Graphs successfully loaded")
 
+    // Load configurations
     val config = ConfigFactory.load()
     val pathConfig = config.getConfig("NGSimulator").getConfig("OutputPath")
 
+    // Extract head nodes for processing
     val headOriginal = netGraphOriginal.head.sm
     val headPerturbed = netGraphPerturbed.head.sm
 

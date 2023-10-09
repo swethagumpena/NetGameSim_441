@@ -14,7 +14,10 @@ import java.util
 import scala.jdk.CollectionConverters.*
 
 object NodesSimScore extends App {
+  // Mapper class for Nodes Similarity Score Calculation
   class NodesSimScoreMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
+
+    // Defining a case class for representing a NodeObject
     case class NodeObject(id: Int, children: Int, props: Int, currentDepth: Int,
                           propValueRange: Int, maxDepth: Int, maxBranchingFactor: Int,
                           maxProperties: Int, storedValue: Double) {
@@ -22,6 +25,7 @@ object NodesSimScore extends App {
                                 maxBranchingFactor, maxProperties, storedValue.round.toInt)
     }
 
+    // Parse a NodeObject from its string representation
     def parseNodeObject(nodeString: String): NodeObject = {
       val pattern = """NodeObject\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+\.\d+)\)""".r
       nodeString match {
@@ -50,15 +54,17 @@ object NodesSimScore extends App {
       val line: String = value.toString
       val parts = line.split("x")
 
+      // Splitting into original and perturbed parts
       val originalPart: Array[String] =
         if (parts(0).trim.nonEmpty) parts(0).trim.split(", ") else Array[String]()
       val perturbedPart: Array[String] =
         if (parts(1).trim.nonEmpty) parts(1).trim.split(", ") else Array[String]()
 
+      // Parsing NodeObjects from the parts
       val parsedOriginalPart: Array[NodeObject] = originalPart.map(parseNodeObject)
-
       val parsedPerturbedPart: Array[NodeObject] = perturbedPart.map(parseNodeObject)
 
+      // Calculate Jaccard similarity scores
       val similarities = parsedOriginalPart.flatMap { original =>
         parsedPerturbedPart.map { perturbed =>
           val originalId = new Text(s"O_${original.id}") // using a prefix to record it as original ID
@@ -68,15 +74,21 @@ object NodesSimScore extends App {
         }
       }
 
+      // Emit similarity scores
+      // One grouping for original nodes, another grouping for perturbed nodes
       similarities.foreach { case (originalKey, perturbedKey, value) =>
         output.collect(originalKey, value)
         output.collect(perturbedKey, value)
       }
     }
   }
+
+  // Reducer class for Nodes Similarity Score Calculation
   class NodesSimScoreReduce extends MapReduceBase with Reducer[Text, Text, Text, Text] {
     override def reduce(key: Text, values: util.Iterator[Text], output: OutputCollector[Text, Text], reporter: Reporter): Unit = {
+      // Combine values for the same key
       val result = values.asScala.map(_.toString).mkString(", ")
+      // Emit the combined result
       if (result.nonEmpty) {
         output.collect(key, new Text(result))
       } else {

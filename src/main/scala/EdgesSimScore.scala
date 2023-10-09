@@ -14,7 +14,10 @@ import java.util
 import scala.jdk.CollectionConverters.*
 
 object EdgesSimScore extends App {
+  // Mapper class for Edges Similarity Score Calculation
   class EdgesSimScoreMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
+
+    // Defining a case class for representing an EdgeObject
     case class EdgeObject(
         sourceId: Int, sourceChildren: Int, sourceProps: Int, sourceCurrentDepth: Int,
         sourcePropValueRange: Int, sourceMaxDepth: Int, sourceMaxBranchingFactor: Int,
@@ -30,6 +33,7 @@ object EdgesSimScore extends App {
             cost.round.toInt)
     }
 
+    // Parse an EdgeObject from its string representation
     def parseEdgeObject(nodeString: String): EdgeObject = {
       val pattern =
         """\(NodeObject\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),([\d.]+)\)-NodeObject\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),(\d+),([\d.]+)\)-(\d+)-([\d.]+)\)""".r
@@ -67,21 +71,24 @@ object EdgesSimScore extends App {
       }
     }
 
+    // Map function
     @throws[IOException]
     def map(key: Object, value: Text, output: OutputCollector[Text, Text],
             reporter: Reporter): Unit = {
       val line: String = value.toString
       val parts = line.split("x")
 
+      // Splitting into original and perturbed parts
       val originalPart: Array[String] =
         if (parts(0).trim.nonEmpty) parts(0).trim.split(" \\| ") else Array[String]()
       val perturbedPart: Array[String] =
         if (parts(1).trim.nonEmpty) parts(1).trim.split(" \\| ") else Array[String]()
 
+      // Parsing EdgeObjects from the parts
       val parsedOriginalPart: Array[EdgeObject] = originalPart.map(parseEdgeObject)
-
       val parsedPerturbedPart: Array[EdgeObject] = perturbedPart.map(parseEdgeObject)
 
+      // Calculate Jaccard similarity scores
       val similarities = parsedOriginalPart.flatMap { original =>
         parsedPerturbedPart.map { perturbed =>
           val originalEdge = new Text(s"O_${original.sourceId}-${original.destId}")
@@ -93,6 +100,7 @@ object EdgesSimScore extends App {
         }
       }
 
+      // Emit similarity scores
       // one grouping for original edges, other grouping for perturbed edges
       similarities.foreach { case (originalKey, perturbedKey, value) =>
         output.collect(originalKey, value)
@@ -100,10 +108,14 @@ object EdgesSimScore extends App {
       }
     }
   }
+
+  // Reducer class for Edges Similarity Score Calculation
   class EdgesSimScoreReduce extends MapReduceBase with Reducer[Text, Text, Text, Text] {
     override def reduce(key: Text, values: util.Iterator[Text], output: OutputCollector[Text, Text],
                         reporter: Reporter): Unit = {
+      // Combine values for the same key
       val result = values.asScala.map(_.toString).mkString(", ")
+      // Emit the combined result
       if (result.nonEmpty) {
         output.collect(key, new Text(result))
       } else {
