@@ -24,37 +24,36 @@ object AlgoPerformance extends App {
       val filePath = job.get("NGS_yaml_file")
       yamlData = parseFile(filePath)
     }
+    val one = new IntWritable(1)
+
+    def processUnchangedValues(key: String, strValue: String, dataMap: Map[String, List[String]], output: OutputCollector[Text, IntWritable]): Unit = {
+      val valuesToCheck = strValue.split(",").map(_.trim)
+
+      val (inAdded, inModified, inRemoved) = key match {
+        case "UnchangedNodes" =>
+          (
+            valuesToCheck.exists(dataMap("AddedNodes").contains),
+            valuesToCheck.exists(dataMap("ModifiedNodes").contains),
+            valuesToCheck.exists(dataMap("RemovedNodes").contains)
+          )
+        case "UnchangedEdges" =>
+          (
+            valuesToCheck.exists(dataMap("AddedEdges").contains),
+            valuesToCheck.exists(dataMap("ModifiedEdges").contains),
+            valuesToCheck.exists(dataMap("RemovedEdges").contains)
+          )
+        case _ => (false, false, false)
+      }
+
+      if (!(inAdded || inModified || inRemoved)) {
+        valuesToCheck.foreach { valueToCheck =>
+          output.collect(new Text("ATL"), one)
+        }
+      }
+    }
 
     @throws[IOException]
     def map(key: Object, value: Text, output: OutputCollector[Text, IntWritable], reporter: Reporter): Unit = {
-      val one = new IntWritable(1)
-
-      def processUnchangedValues(key: String, strValue: String, dataMap: Map[String, List[String]], output: OutputCollector[Text, IntWritable]): Unit = {
-        val valuesToCheck = strValue.split(",").map(_.trim)
-
-        val (inAdded, inModified, inRemoved) = key match {
-          case "UnchangedNodes" =>
-            (
-              valuesToCheck.exists(dataMap("AddedNodes").contains),
-              valuesToCheck.exists(dataMap("ModifiedNodes").contains),
-              valuesToCheck.exists(dataMap("RemovedNodes").contains)
-            )
-          case "UnchangedEdges" =>
-            (
-              valuesToCheck.exists(dataMap("AddedEdges").contains),
-              valuesToCheck.exists(dataMap("ModifiedEdges").contains),
-              valuesToCheck.exists(dataMap("RemovedEdges").contains)
-            )
-          case _ => (false, false, false)
-        }
-
-        if (!(inAdded || inModified || inRemoved)) {
-          valuesToCheck.foreach { valueToCheck =>
-            output.collect(new Text("ATL"), one)
-          }
-        }
-      }
-
       val line: String = value.toString
       val Array(key, strValue) = line.split(":")
 

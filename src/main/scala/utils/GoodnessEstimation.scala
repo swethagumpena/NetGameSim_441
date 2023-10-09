@@ -126,11 +126,11 @@ object GoodnessEstimation {
     writeOutput(outputPath, outputContent)
   }
 
-  private def getBucketName(s3Path: String): String = {
+   def getBucketName(s3Path: String): String = {
     s3Path.drop(5).takeWhile(_ != '/')
   }
 
-  private def getKey(s3Path: String): String = {
+   def getKey(s3Path: String): String = {
     s3Path.drop(5 + getBucketName(s3Path).length + 1)
   }
 }

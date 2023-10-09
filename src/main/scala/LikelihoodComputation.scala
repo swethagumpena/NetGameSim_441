@@ -13,41 +13,40 @@ import java.util
 import scala.jdk.CollectionConverters.*
 
 object LikelihoodComputation extends App {
-  class LikelihoodComputationMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
 
-    def findBestScore(key: String, value: String): (String, Double) = {
-      val selectedElement = key match {
-        case k if k.startsWith("O_") =>
-          val maxScoreElement = value.split(", ").maxBy { element =>
-             val Array(_, score) = element.split('=')
-             score.toDouble
-          }
-          val maxScore = maxScoreElement.split('=')(1).toDouble
-          if (maxScore > 0.5 && maxScore <= 0.9)
-            s"${key.stripPrefix("O_")}=0.0"
-          else
-            s"${key.stripPrefix("O_")}=$maxScore"
+  def findBestScore(key: String, value: String): (String, Double) = {
+    val selectedElement = key match {
+      case k if k.startsWith("O_") =>
+        val maxScoreElement = value.split(", ").maxBy { element =>
+          val Array(_, score) = element.split('=')
+          score.toDouble
+        }
+        val maxScore = maxScoreElement.split('=')(1).toDouble
+        if (maxScore > 0.5 && maxScore <= 0.9)
+          s"${key.stripPrefix("O_")}=0.0"
+        else
+          s"${key.stripPrefix("O_")}=$maxScore"
 
-        case k if k.startsWith("P_") =>
-          val filteredElements = value.split(", ").filter { element =>
-             val Array(_, score) = element.split('=')
-             val scoreValue = score.toDouble
-             scoreValue < 0.1 || scoreValue > 0.9
+      case k if k.startsWith("P_") =>
+        val filteredElements = value.split(", ").filter { element =>
+          val Array(_, score) = element.split('=')
+          val scoreValue = score.toDouble
+          scoreValue < 0.1 || scoreValue > 0.9
+        }
+        if (filteredElements.nonEmpty) {
+          filteredElements.minBy { element =>
+            val Array(_, score) = element.split('=')
+            score.toDouble
           }
-          if (filteredElements.nonEmpty) {
-            filteredElements.minBy { element =>
-               val Array(_, score) = element.split('=')
-               score.toDouble
-            }
-          } else {
-            s"${key.stripPrefix("P_")}=0.0"
-          }
-      }
-
-      val Array(resultKey, resultValue) = selectedElement.split('=')
-      (resultKey, resultValue.toDouble)
+        } else {
+          s"${key.stripPrefix("P_")}=0.0"
+        }
     }
 
+    val Array(resultKey, resultValue) = selectedElement.split('=')
+    (resultKey, resultValue.toDouble)
+  }
+  class LikelihoodComputationMap extends MapReduceBase with Mapper[Object, Text, Text, Text] {
     @throws[IOException]
     def map(key: Object, value: Text, output: OutputCollector[Text, Text],
             reporter: Reporter): Unit = {
