@@ -12,6 +12,13 @@ import software.amazon.awssdk.regions.Region
 import scala.annotation.tailrec
 
 object GoodnessEstimation {
+
+  /**
+   * Reads lines from a local file.
+   *
+   * @param filePath The path to the local file.
+   * @return A List of lines from the file.
+   */
   private def readFromLocal(filePath: String): List[String] = {
     val source = Source.fromFile(filePath)
     try {
@@ -21,6 +28,12 @@ object GoodnessEstimation {
     }
   }
 
+  /**
+   * Reads lines from an S3 object.
+   *
+   * @param s3Path The S3 path (s3://bucketName/fileName).
+   * @return A List of lines from the S3 object.
+   */
   private def readFromS3(s3Path: String): List[String] = {
     val s3Client = S3Client.builder().region(Region.US_EAST_1).build()
 
@@ -46,6 +59,12 @@ object GoodnessEstimation {
     }
   }
 
+  /**
+   * Reads values from a file and processes them into a tuple.
+   *
+   * @param filePath The path to the file (local or S3).
+   * @return A tuple containing four integers.
+   */
   def readValuesFromFile(filePath: String): (Int, Int, Int, Int) = {
     val lines = if (filePath.startsWith("s3://")) {
       readFromS3(filePath)
@@ -72,6 +91,15 @@ object GoodnessEstimation {
     processLines(lines, (0, 0, 0, 0))
   }
 
+  /**
+   * Calculates metrics based on input values.
+   *
+   * @param ATL Number of ATL.
+   * @param DTL Number of DTL.
+   * @param CTL Number of CTL.
+   * @param WTL Number of WTL.
+   * @return A tuple containing three Double values.
+   */
   def calculateMetrics(ATL: Int, DTL: Int, CTL: Int, WTL: Int): (Double, Double, Double) = {
     val GTL = ATL + DTL
     val BTL = CTL + WTL
@@ -82,6 +110,12 @@ object GoodnessEstimation {
     (ACC, BTLR, VPR)
   }
 
+  /**
+   * Writes content to an S3 object.
+   *
+   * @param filePath The S3 path (s3://bucketName/fileName).
+   * @param content  The content to write.
+   */
   private def writeToS3(filePath: String, content: String): Unit = {
     val s3Client = S3Client.builder().region(Region.US_EAST_1).build()
 
@@ -106,12 +140,24 @@ object GoodnessEstimation {
     }
   }
 
+  /**
+   * Writes content to a local file.
+   *
+   * @param filePath The path to the local file.
+   * @param content  The content to write.
+   */
   private def writeToLocal(filePath: String, content: String): Unit = {
     val writer = new PrintWriter(filePath)
     writer.println(content)
     writer.close()
   }
 
+  /**
+   * Writes content to an S3 object or local file.
+   *
+   * @param filePath The path (S3 or local) to write to.
+   * @param content  The content to write.
+   */
   def writeOutput(filePath: String, content: String): Unit = {
     if (filePath.startsWith("s3://")) {
       writeToS3(filePath, content)
@@ -120,6 +166,12 @@ object GoodnessEstimation {
     }
   }
 
+  /**
+   * Calculates the goodness of the algorithm based on provided input values.
+   *
+   * @param inputPath  The path to the input file.
+   * @param outputPath The path to the output file.
+   */
   def calculateGoodness(inputPath: String, outputPath: String): Unit = {
     logger.info("Calculating the Goodness of the algorithm")
     val (atl, dtl, ctl, wtl) = readValuesFromFile(inputPath)

@@ -9,6 +9,13 @@ import scala.util.Try
 import scala.util.Using
 
 object ParseYaml {
+
+  /**
+   * Parses a YAML file and extracts specific information related to nodes and edges.
+   *
+   * @param filePath The path to the YAML file.
+   * @return A Map containing lists of added, modified, and removed nodes and edges.
+   */
   def parseFile(filePath: String): Map[String, List[String]] = {
     // Define a helper function to open an InputStream based on the filePath
     def openStream(filePath: String): Option[InputStream] = {
@@ -19,11 +26,14 @@ object ParseYaml {
       }
     }
 
+    // Attempt to open the specified file or URL
     val streamOption = openStream(filePath)
 
+    // Process the stream if successfully opened, otherwise return an empty Map
     streamOption.flatMap { stream =>
        val lines = Source.fromInputStream(stream).getLines()
 
+      // Extract nodes and edges information
        val result = lines.foldLeft(
          (false, false, false, false, false, List.empty[String], List.empty[String],
           List.empty[String], List.empty[String], List.empty[String], List.empty[String])
@@ -37,6 +47,7 @@ object ParseYaml {
              (false, true, false, false, false, addedNodes, modifiedNodes, removedNodes, addedEdges,
               modifiedEdges, removedEdges)
            } else if (line.startsWith("\tModified:")) {
+             // Extract modified nodes information
              val parts = line.split(":").map(_.trim)
              val newModifiedNodes =
                if (parts.length == 2)
@@ -45,6 +56,7 @@ object ParseYaml {
              (nodes, edges, true, false, false, addedNodes, newModifiedNodes, removedNodes,
               addedEdges, modifiedEdges, removedEdges)
            } else if (line.startsWith("\tRemoved:")) {
+             // Extract removed nodes information
              val parts = line.split(":").map(_.trim)
              val newRemovedNodes =
                if (parts.length == 2)
@@ -53,12 +65,14 @@ object ParseYaml {
              (nodes, edges, false, false, true, addedNodes, modifiedNodes, newRemovedNodes,
               addedEdges, modifiedEdges, removedEdges)
            } else if (line.startsWith("\tAdded:")) {
+             // Mark that added information is being processed
              (nodes, edges, false, true, false, addedNodes, modifiedNodes, removedNodes, addedEdges,
               modifiedEdges, removedEdges)
            } else {
              if (nodes) {
                val parts = line.split(":").map(_.trim)
                if (parts.length == 2) {
+                 // Extract added nodes information
                  val newAddedNodes =
                    if (added) parts(1) :: addedNodes else addedNodes
                  (nodes, edges, modified, added, removed, newAddedNodes, modifiedNodes,
@@ -70,6 +84,7 @@ object ParseYaml {
              } else if (edges) {
                val parts = line.split(":").map(_.trim)
                if (parts.length == 2) {
+                 // Extract edge information
                  val edge = s"${parts(0)}-${parts(1)}"
                  val newAddedEdges =
                    if (added) edge :: addedEdges else addedEdges
@@ -90,9 +105,11 @@ object ParseYaml {
            }
        }
 
+      // Extract the relevant information from the result
        val (_, _, _, _, _, addedNodes, modifiedNodes, removedNodes, addedEdges, modifiedEdges,
             removedEdges) = result
 
+      // Create a Map with keys for the extracted information
        Some(Map(
               "AddedNodes"    -> addedNodes.reverse,
               "ModifiedNodes" -> modifiedNodes,
@@ -102,7 +119,7 @@ object ParseYaml {
               "RemovedEdges"  -> removedEdges.reverse
             ))
     }.getOrElse {
-      // Handle case where opening the stream failed
+      // Handle case where opening the stream failed by returning an empty Map
       Map.empty[String, List[String]]
     }
   }
