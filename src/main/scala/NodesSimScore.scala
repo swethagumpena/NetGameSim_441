@@ -57,15 +57,13 @@ object NodesSimScore extends App {
 
       val parsedPerturbedPart: Array[NodeObject] = perturbedPart.map(parseNodeObject)
 
-      val similarities = for {
-        original  <- parsedOriginalPart
-        perturbed <- parsedPerturbedPart
-      } yield {
-        val originalId = new Text(s"O_${original.id}") // using a prefix to record it as original ID
-        val perturbedId =
-          new Text(s"P_${perturbed.id}") // using a prefix to record it as perturbed ID
-        val similarityScore = jaccardSimilarity(original.toSet, perturbed.toSet)
-        (originalId, perturbedId, new Text(s"(${original.id} | ${perturbed.id})=$similarityScore"))
+      val similarities = parsedOriginalPart.flatMap { original =>
+        parsedPerturbedPart.map { perturbed =>
+          val originalId = new Text(s"O_${original.id}") // using a prefix to record it as original ID
+          val perturbedId = new Text(s"P_${perturbed.id}") // using a prefix to record it as perturbed ID
+          val similarityScore = jaccardSimilarity(original.toSet, perturbed.toSet)
+          (originalId, perturbedId, new Text(s"(${original.id} | ${perturbed.id})=$similarityScore"))
+        }
       }
 
       similarities.foreach { case (originalKey, perturbedKey, value) =>

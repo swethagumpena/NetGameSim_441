@@ -80,16 +80,15 @@ object EdgesSimScore extends App {
 
       val parsedPerturbedPart: Array[EdgeObject] = perturbedPart.map(parseEdgeObject)
 
-      val similarities = for {
-        original  <- parsedOriginalPart
-        perturbed <- parsedPerturbedPart
-      } yield {
-        val originalEdge = new Text(s"O_${original.sourceId}-${original.destId}")
-        val perturbedEdge = new Text(s"P_${perturbed.sourceId}-${perturbed.destId}")
-        val similarityScore = jaccardSimilarity(original.toSet, perturbed.toSet)
-        (originalEdge, perturbedEdge,
-         new Text(
-           s"(${original.sourceId}-${original.destId} | ${perturbed.sourceId}-${perturbed.destId})=$similarityScore"))
+      val similarities = parsedOriginalPart.flatMap { original =>
+        parsedPerturbedPart.map { perturbed =>
+          val originalEdge = new Text(s"O_${original.sourceId}-${original.destId}")
+          val perturbedEdge = new Text(s"P_${perturbed.sourceId}-${perturbed.destId}")
+          val similarityScore = jaccardSimilarity(original.toSet, perturbed.toSet)
+          (originalEdge, perturbedEdge,
+            new Text(
+              s"(${original.sourceId}-${original.destId} | ${perturbed.sourceId}-${perturbed.destId})=$similarityScore"))
+        }
       }
 
       // one grouping for original edges, other grouping for perturbed edges
