@@ -7,7 +7,7 @@ Repo for the MapReduce Homework-1 for CS441-Fall2023
 
 ---
 
-AWS EMR Deployment video link: 
+AWS EMR Deployment video link: https://youtu.be/50KQO4YUv-4
 
 ---
 
@@ -42,7 +42,7 @@ AWS EMR Deployment video link:
 
 ## Requirements:
 
-In this homework, we have to use Map/Reduce to compute the differences between graphs and determine the precision
+In this homework, we have to use Map/Reduce to compute the differences between graphs and determine the precision.
 1) Create a program for parallel distributed processing of large graphs
 2) Display the distribution of nodes and edges based on their similarities computed using a specified formula
 3) For each node and edge, compute the likelihood that it was modified, added, or removed in the perturbed graph, or remained unchanged by implementing a unique and fine-tuned graph matching algorithm
@@ -74,10 +74,10 @@ We will take a look at the detailed description of how each of these pieces of c
 - Finally, we calculate the ACC (Accuracy), BTLR (Balance True Label Ratio) and VPR (Precision Ratio) 
 2) ### [WriteNodePairsToFile.scala](src/main/scala/utils/WriteNodePairsToFile.scala) [Util]
    The nodes data is read from the original graph and perturbed graph and is written to a file called _nodesRepresentation.txt_ in a specific format. The format followed here is: 2 nodes of original graph, and 2 nodes of perturbed graph are written in each line. **The resulting file contains all possible node pairs between both the graphs**. The node data consists of all the properties associated with that node. A delimiter 'x' is used to demarcate nodes from both the graphs.  
-  - Eg representation - NodeObject(1,3,3,1,41,4,6,6,0.603719487501021), NodeObject(2,4,13,1,93,4,5,14,0.6230800344286744) x NodeObject(1,3,3,1,41,4,6,6,0.603719487501021), NodeObject(2,4,13,1,93,4,5,14,0.6230800344286744)
+  - Example representation - NodeObject(1,3,3,1,41,4,6,6,0.603719487501021), NodeObject(2,4,13,1,93,4,5,14,0.6230800344286744) x NodeObject(1,3,3,1,41,4,6,6,0.603719487501021), NodeObject(2,4,13,1,93,4,5,14,0.6230800344286744)
 3) ### [WriteEdgePairsToFile.scala](src/main/scala/utils/WriteEdgePairsToFile.scala) [Util]
    The edges data is read from the original graph and perturbed graph and is written to a file called _edgesRepresentation.txt_ in a specific format. The format followed here is: 2 edges of original graph, and 2 edges of perturbed graph are written in each line. **The resulting file contains all possible edge pairs between both the graphs**. The edge data consists of: properties of source node, properties of destination node, weight and action associated with that edge. The source node, destination node, action and weight are separated by a '-'. Two edges data of one graph are separated by a '|' and delimiter 'x' is used to demarcate edges data from both the graphs.  
-  - Eg representation - (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(128,0,19,1,17,4,3,5,0.8115971461464901)-7-0.3522142) | (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(219,6,1,1,61,3,2,9,0.2287240620915324)-14-0.6211956) x (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(128,0,19,1,17,4,3,5,0.8115971461464901)-7-0.3522142) | (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(219,6,1,1,61,3,2,9,0.2287240620915324)-14-0.6211956)
+  - Example representation - (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(128,0,19,1,17,4,3,5,0.8115971461464901)-7-0.3522142) | (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(219,6,1,1,61,3,2,9,0.2287240620915324)-14-0.6211956) x (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(128,0,19,1,17,4,3,5,0.8115971461464901)-7-0.3522142) | (NodeObject(1,3,3,1,41,4,6,6,0.603719487501021)-NodeObject(219,6,1,1,61,3,2,9,0.2287240620915324)-14-0.6211956)
 4) ### [NodesSimScore](src/main/scala/NodesSimScore.scala) [MapReduceJob]
    Here we have one mapper and one reducer. The pre-processed nodes data is passed to this job. Each time the mapper runs, it receives one shard of the data (one line of the text file). Each shard consists of 2 nodes from the original graph and 2 nodes from the perturbed graph. So, we would have 4 pairs in total. A similarity score is generated between these 4 pairs using a custom similarity function as explained below. 
  -  The output of my mapper is: key is the id of the node in the original graph prepended with a "O_" and the value is a custom string in the format "(originalGraphID | perturbedGraphId)=similarityScore" 
@@ -88,20 +88,20 @@ We will take a look at the detailed description of how each of these pieces of c
 6) ### [SimilarityScoreCalculation](src/main/scala/utils/SimilarityScoreCalculation.scala) [Util]
    A custom similarity function called Jaccard Similarity is used to compute the similarity between two sets and returns a Double value representing the degree of similarity between the sets. If the sets are completely disjoint (i.e., have no elements in common), the Jaccard similarity will be 0. If the sets are identical, the Jaccard similarity will be 1.
 7) ### [LikelihoodComputation](src/main/scala/LikelihoodComputation.scala) [MapReduceJob]
-   This map reduce job receives the outputs from NodesSimScore and EdgesSimScore jobs. It receives scores for each node with every other node and each edge with every other edge. Here, we call _findBestScore_ function which selects the best score for a particular node or edge. This selected value is the traceability link for that particular node/edge. Based on the score and threshold values, a node or an edge is considered to be Added/Modified/Removed/Unchanged  
+   This map reduce job receives the outputs from NodesSimScore and EdgesSimScore jobs. It receives scores for each node with every other node and each edge with every other edge. Here, we call _findBestScore_ function which selects the best score for a particular node or edge. This selected value is the traceability link for that particular node/edge. Based on the score and threshold values, a node or an edge is considered to be Added/Modified/Removed/Unchanged.  
    The nodes and edges are classified based on the following conditions:  
  - If the max score is > 0.9, it is considered to be Unchanged node/edge
  - If the max score is between 0.5 and 0.9, it is considered to be a modified node/edge
  - If the score is less than 0.5, it is considered to be a removed node/edge
  - If a node or edge from perturbed has no elements with a score between 0.1 and 0.9, it is considered to be an added node/edge  
-    The output of the mapper is: key is AddedNodes/ModifiedNodes/RemovedNodes/UnchangedNodes/AddedEdges/ModifiedEdges/RemovedEdges/UnchangedEdges and the value is the id of that node or edge. The reducer then appends all values based on the key resulting in what all nodes and edges have been changed or have remained unchanged
+    The output of the mapper is: key is AddedNodes/ModifiedNodes/RemovedNodes/UnchangedNodes/AddedEdges/ModifiedEdges/RemovedEdges/UnchangedEdges and the value is the id of that node or edge. The reducer then appends all values based on the key resulting in what all nodes and edges have been changed or have remained unchanged.
 8) ### [AlgoPerformance](src/main/scala/AlgoPerformance.scala) [MapReduceJob]
     Here, the input yaml (generated by NetGraphSim aka Golden Set) is loaded and parsed to compare with the changes my algorithm has detected. To every entry in the YAMLs I then classify it to be an ATL/DTL/CTL/WTL. The decision is made based on the following criteria:
  - If my algorithm predicts a node/edge is unchanged or modified and the golden set also says it is unchanged or modified respectively, it is considered to be an ATL (ATL - correctly accepted Traceability Link)
  - If my algorithm predicts a node/edge is added or removed and the golden set also says it is added or removed respectively, it is considered to be a DTL (DTL - correctly discarded Traceability Link). It is a DTL because when a node/edge is added/removed it wouldn't have a corresponding link with the original
  - If my algorithm wrongly predicts a node/edge to be added/modified/removed/unchanged as per the golden set, it is considered to be a WTL (WTL - wrong Traceability Link that algo accepts)
  - If my algorithm does not predict a node/edge to be added/modified/removed/unchanged, but it is present in the golden set, it is considered to be a CTL (CTL - correct Traceability Link that are mistakenly discarded by your algo)  
-    The output of my mapper is: key is ATL/DTL/WTL/CTL and value is one. The reducer then sums up all ATLs, DTLs, CTLs and WTLs and gives the final count of each of these parameters
+    The output of my mapper is: key is ATL/DTL/WTL/CTL and value is one. The reducer then sums up all ATLs, DTLs, CTLs and WTLs and gives the final count of each of these parameters.
 9) ### [GoodnessEstimation](src/main/scala/utils/GoodnessEstimation.scala) [Util]
     Once all these jobs are successful, we calculate the goodness of the algorithm in terms of ACC (Accuracy), BTLR (Balance True Label Ratio) and VPR (Precision Ratio) using the ATL, DTL, CTL and WTL values computed in the last MR job. The ratios are calculated using the following formulae:
  - GTL (Good Traceability Link) = ATL + DTL
@@ -110,7 +110,8 @@ We will take a look at the detailed description of how each of these pieces of c
  - ACC = ATL/RTL
  - BTLR = WTL/RTL
  - VPR = (GTL - BTL)/(2 * RTL) + 0.5  
-   The ACC variable is the ratio of correctly recovered TLs, and the VPR ratio shows how mistaken your algorithm is when analyzing recovered TLs. Constants are used in the formula for the VPR in order to normalize its values, VPR ∈ [0, 1], where VPR=0 means that all recovered TLs are incorrect, and VPR=1 means that they are correct. The idea behind computing the precision VPR is to evaluate the difference between good and bad TLs, i.e., GTL and BTL. If all recovered TLs are good, i.e., GTL=RTL and BTL=0, then VPR=1. If all recovered TLs are bad, i.e., BTL=RTL and GTL=0, then VPR=0. The difference between the ACC and VPR measures is that ACC is used to evaluate the performance of your algorithm while VPR shows the combined performance of your similarity formula and the resulting matchmaking part of your algorithm. The variable ACC is analogous to the recall parameter in information retrieval, which is the ratio of the number of relevant documents retrieved to the total number of documents
+The computed final values are then written to _results.txt_  
+   The ACC variable is the ratio of correctly recovered TLs, and the VPR ratio shows how mistaken your algorithm is when analyzing recovered TLs. Constants are used in the formula for the VPR in order to normalize its values, VPR ∈ [0, 1], where VPR=0 means that all recovered TLs are incorrect, and VPR=1 means that they are correct. The idea behind computing the precision VPR is to evaluate the difference between good and bad TLs, i.e., GTL and BTL. If all recovered TLs are good, i.e., GTL=RTL and BTL=0, then VPR=1. If all recovered TLs are bad, i.e., BTL=RTL and GTL=0, then VPR=0. The difference between the ACC and VPR measures is that ACC is used to evaluate the performance of your algorithm while VPR shows the combined performance of your similarity formula and the resulting matchmaking part of your algorithm. The variable ACC is analogous to the recall parameter in information retrieval, which is the ratio of the number of relevant documents retrieved to the total number of documents.
 ---
 
 ## Test Cases
