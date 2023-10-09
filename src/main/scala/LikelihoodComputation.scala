@@ -15,6 +15,7 @@ import scala.jdk.CollectionConverters.*
 object LikelihoodComputation extends App {
 
   def findBestScore(key: String, value: String): (String, Double) = {
+    logger.trace(s"Finding best score for key: $key, value: $value")
     val selectedElement = key match {
       case k if k.startsWith("O_") =>
         val maxScoreElement = value.split(", ").maxBy { element =>
@@ -50,6 +51,7 @@ object LikelihoodComputation extends App {
     @throws[IOException]
     def map(key: Object, value: Text, output: OutputCollector[Text, Text],
             reporter: Reporter): Unit = {
+      logger.debug(s"Mapping: key = $key, value = ${value.toString}")
       val line: String = value.toString
       val parts = line.split(":")
 
@@ -105,6 +107,8 @@ object LikelihoodComputation extends App {
       val result = values.asScala.map(_.toString).mkString(", ")
       if (result.nonEmpty) {
         output.collect(label, new Text(result))
+      } else {
+        logger.warn(s"No values found for key: ${label.toString}")
       }
     }
   }

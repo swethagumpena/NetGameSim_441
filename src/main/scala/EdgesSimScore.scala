@@ -61,7 +61,9 @@ object EdgesSimScore extends App {
             actionType.toInt,
             cost.toDouble
           )
-        case _ => throw new IllegalArgumentException("Invalid EdgeObject string format")
+        case _ =>
+          logger.trace("Invalid EdgeObject string format")
+          throw new IllegalArgumentException("Invalid EdgeObject string format")
       }
     }
 
@@ -104,6 +106,8 @@ object EdgesSimScore extends App {
       val result = values.asScala.map(_.toString).mkString(", ")
       if (result.nonEmpty) {
         output.collect(key, new Text(result))
+      } else {
+        logger.warn(s"No values found for key: ${key.toString}")
       }
     }
   }

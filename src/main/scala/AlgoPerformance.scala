@@ -83,7 +83,7 @@ object AlgoPerformance extends App {
       } else if (key == "UnchangedNodes" || key == "UnchangedEdges") {
         processUnchangedValues(key, strValue, yamlData, output)
       } else {
-        logger.info(s"Key $key not found in compareWith")
+        logger.warn(s"Key $key not found in compareWith")
       }
     }
   }

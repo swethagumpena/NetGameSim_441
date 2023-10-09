@@ -38,7 +38,9 @@ object NodesSimScore extends App {
             maxProperties.toInt,
             storedValue.toDouble
           )
-        case _ => throw new IllegalArgumentException("Invalid NodeObject string format")
+        case _ =>
+          logger.trace("Invalid NodeObject string format")
+          throw new IllegalArgumentException("Invalid NodeObject string format")
       }
     }
 
@@ -77,6 +79,8 @@ object NodesSimScore extends App {
       val result = values.asScala.map(_.toString).mkString(", ")
       if (result.nonEmpty) {
         output.collect(key, new Text(result))
+      } else {
+        logger.warn(s"No values found for key: ${key.toString}")
       }
     }
   }

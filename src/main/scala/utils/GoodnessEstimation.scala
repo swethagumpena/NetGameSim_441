@@ -3,6 +3,7 @@ package utils
 
 import java.io.PrintWriter
 import scala.io.Source
+import NetGraphAlgebraDefs.NetModelAlgebra.logger
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{GetObjectRequest, PutObjectRequest, S3Exception}
@@ -120,10 +121,12 @@ object GoodnessEstimation {
   }
 
   def calculateGoodness(inputPath: String, outputPath: String): Unit = {
+    logger.info("Calculating the Goodness of the algorithm")
     val (atl, dtl, ctl, wtl) = readValuesFromFile(inputPath)
     val (acc, btlr, vpr) = calculateMetrics(atl, dtl, ctl, wtl)
     val outputContent = s"ACC: $acc\nBTLR: $btlr\nVPR: $vpr"
     writeOutput(outputPath, outputContent)
+    logger.info("Successfully calculated the performance of the algorithm in terms of ACC, BTLR and VPR")
   }
 
    def getBucketName(s3Path: String): String = {

@@ -33,10 +33,13 @@ object MainClass {
     val headOriginal = netGraphOriginal.head.sm
     val headPerturbed = netGraphPerturbed.head.sm
 
+    logger.info("Creating pre-processing file for Nodes")
     createNodePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${pathConfig.getString("nodePairs")}")
+    logger.info("Creating pre-processing file for Edges")
     createEdgePairsAndWrite(headOriginal, headPerturbed, s"${args(3)}${pathConfig.getString("edgePairs")}")
 
     def runNodesSimScoreMapReduceJob(args: Array[String]): Boolean = {
+      logger.info(s"Running Nodes Similarity Score Calculation job")
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("FindNodesSimilarityScores")
       conf.set("mapred.textoutputformat.separator", ":")
@@ -62,6 +65,7 @@ object MainClass {
     }
 
     def runEdgesSimScoreMapReduceJob(args: Array[String]): Boolean = {
+      logger.info(s"Running Edges Similarity Score Calculation job")
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("FindEdgesSimilarityScores")
       conf.set("mapred.textoutputformat.separator", ":")
@@ -87,6 +91,7 @@ object MainClass {
     }
 
     def runLikelihoodMapReduceJob(args: Array[String]): Boolean = {
+      logger.info(s"Running Likelihood of Change Computation job")
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("FindLikelihoodOfChange")
       conf.set("mapred.textoutputformat.separator", ":")
@@ -113,6 +118,7 @@ object MainClass {
     }
 
     def runAlgoPerformanceMapReduceJob(args: Array[String]): Boolean = {
+      logger.info(s"Running Estimating Algorithm Performance job")
       val conf: JobConf = new JobConf(this.getClass)
       conf.setJobName("EstimateAlgorithmPerformance")
       conf.set("mapred.textoutputformat.separator", ":")
@@ -144,6 +150,7 @@ object MainClass {
       runLikelihoodMapReduceJob(args) &&
       runAlgoPerformanceMapReduceJob(args)) {
       calculateGoodness(s"${args(3)}${pathConfig.getString("algorithmPerformance")}/part-00000", s"${args(3)}${pathConfig.getString("results")}")
+      logger.info(s"Jobs complete")
     }
   }
 }
