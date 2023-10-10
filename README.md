@@ -37,6 +37,11 @@ AWS EMR Deployment video link: https://youtu.be/50KQO4YUv-4
 - Make sure that your local input/output folder has the requisite permissions to allow the program to read and write to it
 - Make sure Hadoop is running on your machine before you run the program. Start Hadoop using `sbin/start-all.sh`
 
+---
+
+### Parameters
+1. Sample input path - ```inputs/NetGameSimNetGraph_06-10-23-16-54-57.ngs inputs/NetGameSimNetGraph_06-10-23-16-54-57.ngs.perturbed inputs/NetGameSimNetGraph_06-10-23-16-54-57.ngs.yaml```
+2. Sample output path - ```src/main/scala/resources/output```
 
 ---
 
